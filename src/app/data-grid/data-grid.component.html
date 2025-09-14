@@ -1,0 +1,400 @@
+<div class="data-grid-container" (click)="closeDropdown()">
+  <!-- Selected IDs Display -->
+  <div class="selected-ids-display" *ngIf="selectedIds">
+    <h3>Selected Row IDs: {{ selectedIds }}</h3>
+  </div>
+
+  <!-- Export Buttons -->
+  <div class="export-buttons">
+    <button class="export-btn excel-btn" (click)="exportToExcel()" title="Export to CSV">
+      <i class="fas fa-file-excel"></i> Export to CSV
+    </button>
+    <button class="export-btn pdf-btn" (click)="exportToPdf()" title="Export to Text">
+      <i class="fas fa-file-alt"></i> Export to Text
+    </button>
+    <button class="test-code-btn" title="View Selenium Test Code" (click)="openTestCodeModal()">
+      <i class="fas fa-code"></i> View Test Code
+    </button>
+  </div>
+
+  <!-- Data Grid -->
+  <div class="grid-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th width="50">Select</th>
+          <th width="150">Name</th>
+          <th width="200">Email</th>
+          <th width="120">Department</th>
+          <th width="130">Position</th>
+          <th width="100">Salary</th>
+          <th width="120">Start Date</th>
+          <th width="100">Status</th>
+          <th width="60">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of displayedData" class="data-row" [class.selected]="isRowSelected(item)">
+          <td class="checkbox-cell">
+            <input 
+              type="checkbox" 
+              [checked]="isRowSelected(item)"
+              (change)="onRowSelect(item, $event)" />
+          </td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.email }}</td>
+          <td>{{ item.department }}</td>
+          <td>{{ item.position }}</td>
+          <td class="salary-cell">
+            <div class="salary-container">
+              <span *ngIf="editingSalaryId !== item.id" class="salary-value">${{ item.salary | number:'1.0-0' }}</span>
+              <input 
+                *ngIf="editingSalaryId === item.id"
+                type="number" 
+                [(ngModel)]="editingSalary"
+                class="salary-input"
+                (keyup.enter)="saveSalarySimple(item)"
+                (keyup.escape)="cancelEdit()"
+                autofocus>
+              <button 
+                *ngIf="editingSalaryId !== item.id"
+                class="edit-salary-btn" 
+                (click)="startEdit(item.id)"
+                title="Edit Salary">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
+              <div *ngIf="editingSalaryId === item.id" class="salary-actions">
+                <button type="button" (click)="saveSalarySimple(item)" title="Save" style="background: red; color: white; padding: 10px; border: 2px solid black; margin: 5px;">
+                  SAVE
+                </button>
+                <button type="button" (click)="cancelEdit()" title="Cancel" style="background: blue; color: white; padding: 10px; border: 2px solid black; margin: 5px;">
+                  CANCEL
+                </button>
+              </div>
+              <div class="code-display-icons" *ngIf="hasUpdatedSalary(item.id)">
+                <button class="code-icon esql-icon" (click)="showESQLCode(item)" title="View ESQL Code">
+                  <i class="fas fa-database"></i>
+                </button>
+                <button class="code-icon mainframe-icon" (click)="showMainframeCode(item)" title="View Mainframe Code">
+                  <i class="fas fa-server"></i>
+                </button>
+              </div>
+            </div>
+          </td>
+          <td>{{ item.startDate | date:'MM/dd/yyyy' }}</td>
+          <td>{{ item.status }}</td>
+          <td class="actions-cell">
+            <div class="actions-container">
+              <button class="ellipsis-btn" (click)="toggleDropdown($event, item.id)">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div class="dropdown-menu" *ngIf="isDropdownOpen(item.id)">
+                <div class="dropdown-item" (click)="viewComments(item)">
+                  <i class="fas fa-comments"></i> View Comments ({{ getCommentCount(item) }})
+                </div>
+                <div class="dropdown-item" (click)="openCommentModal(item)">
+                  <i class="fas fa-comment-plus"></i> Add Comment
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" (click)="onActionClick('A', item)">
+                  <i class="fas fa-star"></i> Action A
+                </div>
+                <div class="dropdown-item" (click)="onActionClick('B', item)">
+                  <i class="fas fa-edit"></i> Action B
+                </div>
+                <div class="dropdown-item" (click)="onActionClick('C', item)">
+                  <i class="fas fa-trash"></i> Action C
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Loading and Status -->
+  <div class="pagination-container">
+    <div class="scroll-status">
+      <span class="status-info">
+        Showing {{ displayedData.length }} of {{ data.items.length }} records
+        <span *ngIf="currentPage < totalPages" class="scroll-hint"> - Scroll down to load more</span>
+        <span *ngIf="currentPage >= totalPages" class="complete-hint"> - All records loaded</span>
+      </span>
+    </div>
+    
+    <!-- Enhanced Loading Indicator -->
+    <div class="loading-indicator" *ngIf="isLoading">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <span class="loading-text">Loading more data...</span>
+      <div class="loading-progress">
+        <div class="progress-bar" [style.width.%]="getLoadingProgress()"></div>
+      </div>
+    </div>
+
+    <!-- Skeleton Loading Rows -->
+    <div class="skeleton-container" *ngIf="isLoading">
+      <div class="skeleton-row" *ngFor="let item of [1,2,3,4,5]">
+        <div class="skeleton-cell checkbox-skeleton"></div>
+        <div class="skeleton-cell name-skeleton"></div>
+        <div class="skeleton-cell email-skeleton"></div>
+        <div class="skeleton-cell dept-skeleton"></div>
+        <div class="skeleton-cell pos-skeleton"></div>
+        <div class="skeleton-cell salary-skeleton"></div>
+        <div class="skeleton-cell date-skeleton"></div>
+        <div class="skeleton-cell status-skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment Modal -->
+  <div class="modal-overlay" *ngIf="showCommentModal" (click)="closeCommentModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add Comment & Attachments</h3>
+        <button class="close-btn" (click)="closeCommentModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="employee-info" *ngIf="selectedItem">
+          <strong>{{ selectedItem.name }}</strong> - {{ selectedItem.department }}
+        </div>
+        
+        <div class="form-group">
+          <label for="comment">Comment:</label>
+          <textarea 
+            id="comment"
+            [(ngModel)]="newComment" 
+            placeholder="Enter your comment here..."
+            rows="4"
+            class="comment-textarea">
+          </textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="attachments">Attachments:</label>
+          <input 
+            type="file" 
+            id="attachments"
+            multiple 
+            (change)="onFileSelected($event)"
+            class="file-input">
+          <div class="selected-files" *ngIf="selectedFiles.length > 0">
+            <div class="file-item" *ngFor="let file of selectedFiles">
+              <i class="fas fa-paperclip"></i> {{ file.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeCommentModal()">Cancel</button>
+        <button class="btn-submit" (click)="submitComment()" [disabled]="!newComment.trim()">
+          <i class="fas fa-paper-plane"></i> Submit Comment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Comments Modal -->
+  <div class="modal-overlay" *ngIf="showViewCommentsModal" (click)="closeViewCommentsModal()">
+    <div class="modal-content view-comments-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-comments"></i> Comments for {{ selectedItem?.name }}</h3>
+        <button class="close-btn" (click)="closeViewCommentsModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="employee-info" *ngIf="selectedItem">
+          <strong>{{ selectedItem.name }}</strong> - {{ selectedItem.department }} | {{ selectedItem.position }}
+        </div>
+        
+        <div class="comments-list" *ngIf="selectedItem && selectedItem.comments && selectedItem.comments.length > 0">
+          <div class="comment-item" *ngFor="let comment of selectedItem.comments">
+            <div class="comment-header">
+              <span class="comment-timestamp">{{ comment.timestamp | date:'MM/dd/yyyy h:mm a' }}</span>
+              <span class="comment-id">#{{ comment.id.split('_')[1] }}</span>
+            </div>
+            <div class="comment-text">{{ comment.text }}</div>
+            <div class="comment-attachments" *ngIf="comment.attachments && comment.attachments.length > 0">
+              <div class="attachment-item" *ngFor="let attachment of comment.attachments">
+                <i class="fas fa-paperclip"></i> {{ attachment }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="no-comments" *ngIf="!selectedItem || !selectedItem.comments || selectedItem.comments.length === 0">
+          <i class="fas fa-comment-slash"></i>
+          <p>No comments yet for this employee.</p>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-add-comment" (click)="openCommentModal(selectedItem!)">
+          <i class="fas fa-comment-plus"></i> Add New Comment
+        </button>
+        <button class="btn-cancel" (click)="closeViewCommentsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESQL Code Modal -->
+  <div class="modal-overlay" *ngIf="showESQLModal" (click)="closeESQLModal()">
+    <div class="modal-content code-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-database"></i> ESQL Code - Update Salary API</h3>
+        <button class="close-btn" (click)="closeESQLModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-title">ESQL API Code</span>
+            <button class="copy-btn" (click)="copyESQLCodeToClipboard()" title="Copy to Clipboard">
+              <i class="fas fa-copy"></i> Copy Code
+            </button>
+          </div>
+          <pre class="code-block"><code>{{ getESQLCode() }}</code></pre>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeESQLModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mainframe Code Modal -->
+  <div class="modal-overlay" *ngIf="showMainframeModal" (click)="closeMainframeModal()">
+    <div class="modal-content code-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-server"></i> Mainframe BI Engine Code</h3>
+        <button class="close-btn" (click)="closeMainframeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-title">Mainframe BI Engine Code</span>
+            <button class="copy-btn" (click)="copyMainframeCodeToClipboard()" title="Copy to Clipboard">
+              <i class="fas fa-copy"></i> Copy Code
+            </button>
+          </div>
+          <pre class="code-block"><code>{{ getMainframeCode() }}</code></pre>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeMainframeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Code Modal -->
+  <div class="modal-overlay" *ngIf="showTestCodeModal" (click)="closeTestCodeModal()">
+    <div class="modal-content test-code-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-code"></i> Selenium Test Code</h3>
+        <button class="close-btn" (click)="closeTestCodeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="language-selector">
+          <label>Select Language:</label>
+          <div class="language-buttons">
+            <button 
+              class="lang-btn" 
+              [class.active]="selectedTestLanguage === 'java'"
+              (click)="selectTestLanguage('java')">
+              <i class="fab fa-java"></i> Java
+            </button>
+            <button 
+              class="lang-btn" 
+              [class.active]="selectedTestLanguage === 'python'"
+              (click)="selectTestLanguage('python')">
+              <i class="fab fa-python"></i> Python
+            </button>
+            <button 
+              class="lang-btn" 
+              [class.active]="selectedTestLanguage === 'javascript'"
+              (click)="selectTestLanguage('javascript')">
+              <i class="fab fa-js"></i> JavaScript
+            </button>
+          </div>
+        </div>
+        
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-title">{{ selectedTestLanguage.toUpperCase() }} Test Suite</span>
+            <button class="copy-btn" (click)="copyTestCodeToClipboard()" title="Copy to Clipboard">
+              <i class="fas fa-copy"></i> Copy Code
+            </button>
+          </div>
+          <pre class="code-block"><code>{{ getTestCode() }}</code></pre>
+        </div>
+        
+        <div class="test-instructions">
+          <h4><i class="fas fa-info-circle"></i> How to Run Tests:</h4>
+          <div class="instructions-content">
+            <div *ngIf="selectedTestLanguage === 'java'">
+              <p><strong>Prerequisites:</strong></p>
+              <ul>
+                <li>Java 11+ installed</li>
+                <li>Maven installed</li>
+                <li>Chrome browser</li>
+                <li>ChromeDriver in PATH</li>
+              </ul>
+              <p><strong>Commands:</strong></p>
+              <pre class="command-block">mvn clean test</pre>
+            </div>
+            
+            <div *ngIf="selectedTestLanguage === 'python'">
+              <p><strong>Prerequisites:</strong></p>
+              <ul>
+                <li>Python 3.7+ installed</li>
+                <li>Chrome browser</li>
+                <li>ChromeDriver in PATH</li>
+              </ul>
+              <p><strong>Commands:</strong></p>
+              <pre class="command-block">pip install -r requirements.txt
+python data_grid_test_suite.py</pre>
+            </div>
+            
+            <div *ngIf="selectedTestLanguage === 'javascript'">
+              <p><strong>Prerequisites:</strong></p>
+              <ul>
+                <li>Node.js installed</li>
+                <li>Chrome browser</li>
+                <li>ChromeDriver in PATH</li>
+              </ul>
+              <p><strong>Commands:</strong></p>
+              <pre class="command-block">npm install selenium-webdriver
+node test_suite.js</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeTestCodeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

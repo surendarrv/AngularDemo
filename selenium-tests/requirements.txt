@@ -1,0 +1,7 @@
+# Selenium Test Requirements
+selenium==4.15.2
+webdriver-manager==4.0.1
+pytest==7.4.3
+pytest-html==4.1.1
+pytest-xdist==3.3.1
+allure-pytest==2.13.2
