@@ -394,6 +394,11 @@ export class DataGridComponent implements OnInit, OnDestroy {
     // Add your specific logic for Action A here
   }
 
+  // Check if Action A should be disabled for Developer position
+  isActionADisabled(item: DataItem): boolean {
+    return item.position.toLowerCase() === 'developer';
+  }
+
   private handleActionB(item: DataItem): void {
     alert(`Action B executed for ${item.name} (${item.position})`);
     // Add your specific logic for Action B here

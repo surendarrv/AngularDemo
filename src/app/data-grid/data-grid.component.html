@@ -22,7 +22,6 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th width="60">Actions</th>
           <th width="50">Select</th>
           <th width="150">Name</th>
           <th width="200">Email</th>
@@ -31,37 +30,11 @@
           <th width="100">Salary</th>
           <th width="120">Start Date</th>
           <th width="100">Status</th>
+          <th width="60">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let item of displayedData" class="data-row" [class.selected]="isRowSelected(item)">
-          <td class="actions-cell">
-            <div class="actions-container">
-              <button class="ellipsis-btn" (click)="toggleDropdown($event, item.id)">
-                <i class="fas fa-ellipsis-v"></i>
-              </button>
-              
-              <!-- Dropdown Menu -->
-              <div class="dropdown-menu" *ngIf="isDropdownOpen(item.id)">
-                <div class="dropdown-item" (click)="viewComments(item)">
-                  <i class="fas fa-comments"></i> View Comments ({{ getCommentCount(item) }})
-                </div>
-                <div class="dropdown-item" (click)="openCommentModal(item)">
-                  <i class="fas fa-comment-plus"></i> Add Comment
-                </div>
-                <div class="dropdown-divider"></div>
-                <div class="dropdown-item" (click)="onActionClick('A', item)">
-                  <i class="fas fa-star"></i> Action A
-                </div>
-                <div class="dropdown-item" (click)="onActionClick('B', item)">
-                  <i class="fas fa-edit"></i> Action B
-                </div>
-                <div class="dropdown-item" (click)="onActionClick('C', item)">
-                  <i class="fas fa-trash"></i> Action C
-                </div>
-              </div>
-            </div>
-          </td>
           <td class="checkbox-cell">
             <input 
               type="checkbox" 
@@ -110,6 +83,33 @@
           </td>
           <td>{{ item.startDate | date:'MM/dd/yyyy' }}</td>
           <td>{{ item.status }}</td>
+          <td class="actions-cell">
+            <div class="actions-container">
+              <button class="ellipsis-btn" (click)="toggleDropdown($event, item.id)">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+              
+              <!-- Dropdown Menu -->
+              <div class="dropdown-menu" *ngIf="isDropdownOpen(item.id)">
+                <div class="dropdown-item" (click)="viewComments(item)">
+                  <i class="fas fa-comments"></i> View Comments ({{ getCommentCount(item) }})
+                </div>
+                <div class="dropdown-item" (click)="openCommentModal(item)">
+                  <i class="fas fa-comment-plus"></i> Add Comment
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" (click)="onActionClick('A', item)">
+                  <i class="fas fa-star"></i> Action A
+                </div>
+                <div class="dropdown-item" (click)="onActionClick('B', item)">
+                  <i class="fas fa-edit"></i> Action B
+                </div>
+                <div class="dropdown-item" (click)="onActionClick('C', item)">
+                  <i class="fas fa-trash"></i> Action C
+                </div>
+              </div>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>

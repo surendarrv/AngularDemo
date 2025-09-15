@@ -623,6 +623,30 @@ input[type="checkbox"] {
   color: #dc3545;
 }
 
+/* Disabled dropdown item styling */
+.dropdown-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.dropdown-item.disabled:hover {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.dropdown-item.disabled i {
+  color: #6c757d !important;
+}
+
+.disabled-text {
+  font-size: 11px;
+  color: #6c757d;
+  font-style: italic;
+  margin-left: auto;
+}
+
 /* View Comments Modal Styling */
 .view-comments-modal {
   max-width: 600px;
